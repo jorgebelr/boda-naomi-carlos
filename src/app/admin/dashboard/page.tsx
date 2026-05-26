@@ -69,6 +69,7 @@ export default function AdminDashboardPage() {
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState<string | null>(null);
   const [selectedAlbumFilter, setSelectedAlbumFilter] = useState<string | null>(null);
+  const [isConfirmingDeleteAlbum, setIsConfirmingDeleteAlbum] = useState(false);
 
   // Redirección si no está autenticado
   useEffect(() => {
@@ -153,6 +154,9 @@ export default function AdminDashboardPage() {
   const handleDeletePhoto = async (id: string, storagePath: string) => {
     setIsActionPending(id);
     try {
+      const photoObj = photos.find(p => p.id === id);
+      const albumId = photoObj?.album_id;
+
       // A. Borrar de Supabase Storage
       const { error: storageError } = await supabase.storage
         .from('wedding-photos')
@@ -173,22 +177,89 @@ export default function AdminDashboardPage() {
       // C. Actualizar estado local reactivamente
       setPhotos(prev => prev.filter(p => p.id !== id));
       
-      // Recalcular conteos de álbumes
-      setAlbums(prev => 
-        prev.map(album => {
-          const newPhotos = photos.filter(p => p.album_id === album.id && p.id !== id);
-          return {
-            ...album,
-            photoCount: newPhotos.length,
-            coverUrl: newPhotos[0]?.url || undefined
-          };
-        })
-      );
+      // D. Verificar si la carpeta quedó vacía
+      const remainingPhotos = photos.filter(p => p.album_id === albumId && p.id !== id);
+      
+      if (albumId && remainingPhotos.length === 0) {
+        // La carpeta quedó vacía, la eliminamos automáticamente de la base de datos
+        const { error: albumDeleteError } = await supabase
+          .from('albums')
+          .delete()
+          .eq('id', albumId);
+          
+        if (albumDeleteError) {
+          console.error('Error al borrar carpeta vacía automáticamente:', albumDeleteError);
+        }
+        
+        // Quitar el álbum del estado
+        setAlbums(prev => prev.filter(a => a.id !== albumId));
+        
+        // Si estábamos viendo ese álbum, regresamos a la vista general de carpetas
+        if (selectedAlbumFilter === albumId) {
+          setSelectedAlbumFilter(null);
+        }
+      } else {
+        // Recalcular conteos de álbumes si no fue eliminado
+        setAlbums(prev => 
+          prev.map(album => {
+            const newPhotos = photos.filter(p => p.album_id === album.id && p.id !== id);
+            return {
+              ...album,
+              photoCount: newPhotos.length,
+              coverUrl: newPhotos[0]?.url || undefined
+            };
+          })
+        );
+      }
 
       setPhotoToDelete(null);
     } catch (err: unknown) {
       console.error('Error al eliminar la foto:', err);
       alert('Error al intentar eliminar la foto de la base de datos.');
+    } finally {
+      setIsActionPending(null);
+    }
+  };
+
+  // 3. Acción: Borrar álbum completo (carpeta y todas sus fotos en DB + Storage)
+  const handleDeleteAlbum = async () => {
+    if (!selectedAlbumFilter) return;
+    setIsActionPending('delete-album');
+    try {
+      const albumId = selectedAlbumFilter;
+      const targetAlbumPhotos = photos.filter(p => p.album_id === albumId);
+      
+      // A. Eliminar fotos físicas en Supabase Storage
+      if (targetAlbumPhotos.length > 0) {
+        const storagePaths = targetAlbumPhotos.map(p => p.storage_path);
+        const { error: storageError } = await supabase.storage
+          .from('wedding-photos')
+          .remove(storagePaths);
+
+        if (storageError) {
+          console.warn('Advertencia al vaciar Storage del álbum:', storageError);
+        }
+      }
+
+      // B. Eliminar el álbum de la base de datos
+      // (Cascada se encargará de borrar todas las filas correspondientes en 'photos')
+      const { error: dbError } = await supabase
+        .from('albums')
+        .delete()
+        .eq('id', albumId);
+
+      if (dbError) throw dbError;
+
+      // C. Actualizar estado local reactivamente
+      setPhotos(prev => prev.filter(p => p.album_id !== albumId));
+      setAlbums(prev => prev.filter(a => a.id !== albumId));
+      
+      // D. Salir del álbum e ir a vista general
+      setSelectedAlbumFilter(null);
+      setIsConfirmingDeleteAlbum(false);
+    } catch (err: unknown) {
+      console.error('Error al eliminar la carpeta completa:', err);
+      alert('Error al intentar eliminar la carpeta completa de la base de datos.');
     } finally {
       setIsActionPending(null);
     }
@@ -456,7 +527,7 @@ export default function AdminDashboardPage() {
                 </button>
 
                 {/* Cabecera del Álbum */}
-                <div className="border-b border-stone-100 pb-3 flex justify-between items-end">
+                <div className="border-b border-stone-100 pb-3 flex justify-between items-end gap-4">
                   <div>
                     <h3 className="font-serif text-xl italic text-stone-900">
                       {albums.find(a => a.id === selectedAlbumFilter)?.name}
@@ -465,6 +536,17 @@ export default function AdminDashboardPage() {
                       {albumPhotos.length} foto{albumPhotos.length !== 1 ? 's' : ''} en esta carpeta
                     </p>
                   </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsConfirmingDeleteAlbum(true)}
+                    className="rounded-xl border-red-200 text-red-650 hover:bg-red-50 hover:border-red-300 py-2 flex items-center gap-1.5 shrink-0"
+                    disabled={isActionPending !== null}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Borrar Carpeta
+                  </Button>
                 </div>
 
                 {/* Grid de fotos del álbum */}
@@ -721,6 +803,43 @@ export default function AdminDashboardPage() {
                 isLoading={isActionPending !== null}
               >
                 Eliminar
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Borrado de Álbum Completo */}
+      {isConfirmingDeleteAlbum && (
+        <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+          <Card variant="glass" className="max-w-xs w-full text-center p-6 flex flex-col gap-4 animate-scale-up">
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-650 flex items-center justify-center mx-auto">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg text-stone-950">¿Eliminar Carpeta?</h3>
+              <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                Esta acción eliminará la carpeta **&quot;{albums.find(a => a.id === selectedAlbumFilter)?.name}&quot;** y **todas las {albumPhotos.length} fotos** que contiene dentro, tanto de la base de datos como de Supabase Storage. Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div className="flex gap-2.5 mt-2">
+              <Button
+                onClick={() => setIsConfirmingDeleteAlbum(false)}
+                variant="secondary"
+                size="sm"
+                className="flex-1 rounded-xl py-2.5"
+                disabled={isActionPending !== null}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDeleteAlbum}
+                variant="danger"
+                size="sm"
+                className="flex-1 rounded-xl py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white"
+                isLoading={isActionPending === 'delete-album'}
+              >
+                Eliminar Todo
               </Button>
             </div>
           </Card>

@@ -40,3 +40,165 @@ body {
 * {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* --- PHONE DEMO ANIMATIONS --- */
+
+.demo-finger {
+  animation: demo-finger-move 8s infinite ease-in-out;
+}
+
+.demo-ripple {
+  animation: demo-ripple-effect 8s infinite ease-in-out;
+}
+
+.demo-photo-1 {
+  animation: demo-select-highlight-1 8s infinite ease-in-out;
+}
+
+.demo-photo-2 {
+  animation: demo-select-highlight-2 8s infinite ease-in-out;
+}
+
+.demo-photo-6 {
+  animation: demo-select-highlight-6 8s infinite ease-in-out;
+}
+
+.demo-check-1 {
+  animation: demo-check-pop-1 8s infinite ease-in-out;
+}
+
+.demo-check-2 {
+  animation: demo-check-pop-2 8s infinite ease-in-out;
+}
+
+.demo-check-6 {
+  animation: demo-check-pop-6 8s infinite ease-in-out;
+}
+
+.demo-button {
+  animation: demo-btn-state 8s infinite ease-in-out;
+}
+
+.demo-button::before {
+  content: "Seleccionar";
+  animation: demo-btn-text 8s infinite ease-in-out;
+}
+
+.demo-success-screen {
+  animation: demo-success-card-fade 8s infinite ease-in-out;
+}
+
+@keyframes demo-finger-move {
+  0% { transform: translate(75px, 200px) scale(1); opacity: 0; }
+  4% { opacity: 1; }
+  /* Target Photo 1 center: x=34px, y=49px */
+  14% { transform: translate(34px, 49px) scale(1); }
+  17% { transform: translate(34px, 49px) scale(0.8); } /* Tap! */
+  20% { transform: translate(34px, 49px) scale(1); }
+  /* Target Photo 2 center: x=75px, y=49px */
+  30% { transform: translate(75px, 49px) scale(1); }
+  33% { transform: translate(75px, 49px) scale(0.8); } /* Tap! */
+  36% { transform: translate(75px, 49px) scale(1); }
+  /* Target Photo 6 center: x=116px, y=90px */
+  46% { transform: translate(116px, 90px) scale(1); }
+  49% { transform: translate(116px, 90px) scale(0.8); } /* Tap! */
+  52% { transform: translate(116px, 90px) scale(1); }
+  /* Target Button center: x=75px, y=184px */
+  62% { transform: translate(75px, 184px) scale(1); }
+  65% { transform: translate(75px, 184px) scale(0.8); } /* Tap! */
+  68% { transform: translate(75px, 184px) scale(1); }
+  85% { transform: translate(75px, 175px) scale(1); opacity: 1; }
+  90%, 100% { transform: translate(75px, 200px) scale(1); opacity: 0; }
+}
+
+@keyframes demo-ripple-effect {
+  0%, 16%, 32%, 48%, 64%, 80%, 100% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  /* Ripples trigger on tap times */
+  17% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+  21% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  33% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+  37% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  49% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+  53% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  65% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.8; }
+  69% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+@keyframes demo-select-highlight-1 {
+  0%, 17% { border-color: transparent; transform: scale(1); }
+  18%, 90% { border-color: #10b981; transform: scale(0.93); box-shadow: 0 0 0 2px rgba(16,185,129,0.15); }
+  91%, 100% { border-color: transparent; transform: scale(1); }
+}
+
+@keyframes demo-select-highlight-2 {
+  0%, 33% { border-color: transparent; transform: scale(1); }
+  34%, 90% { border-color: #10b981; transform: scale(0.93); box-shadow: 0 0 0 2px rgba(16,185,129,0.15); }
+  91%, 100% { border-color: transparent; transform: scale(1); }
+}
+
+@keyframes demo-select-highlight-6 {
+  0%, 49% { border-color: transparent; transform: scale(1); }
+  50%, 90% { border-color: #10b981; transform: scale(0.93); box-shadow: 0 0 0 2px rgba(16,185,129,0.15); }
+  91%, 100% { border-color: transparent; transform: scale(1); }
+}
+
+@keyframes demo-check-pop-1 {
+  0%, 17% { opacity: 0; transform: scale(0.4); }
+  18%, 90% { opacity: 1; transform: scale(1); }
+  91%, 100% { opacity: 0; transform: scale(0.4); }
+}
+
+@keyframes demo-check-pop-2 {
+  0%, 33% { opacity: 0; transform: scale(0.4); }
+  34%, 90% { opacity: 1; transform: scale(1); }
+  91%, 100% { opacity: 0; transform: scale(0.4); }
+}
+
+@keyframes demo-check-pop-6 {
+  0%, 49% { opacity: 0; transform: scale(0.4); }
+  50%, 90% { opacity: 1; transform: scale(1); }
+  91%, 100% { opacity: 0; transform: scale(0.4); }
+}
+
+@keyframes demo-btn-state {
+  0%, 17% { background-color: #78716c; transform: scale(1); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  18%, 64% { background-color: #1c1917; transform: scale(1); }
+  65% { background-color: #10b981; transform: scale(0.95); }
+  68%, 90% { background-color: #10b981; transform: scale(1); }
+  91%, 100% { background-color: #78716c; transform: scale(1); }
+}
+
+@keyframes demo-btn-text {
+  0%, 17% { content: "Seleccionar"; }
+  18%, 33% { content: "Subir (1 foto)"; }
+  34%, 49% { content: "Subir (2 fotos)"; }
+  50%, 64% { content: "Subir (3 fotos)"; }
+  65%, 90% { content: "¡Subiendo fotos! ✓"; }
+  91%, 100% { content: "Seleccionar"; }
+}
+
+@keyframes demo-success-card-fade {
+  0%, 67% { opacity: 0; transform: scale(0.9) translateY(10px); pointer-events: none; }
+  70%, 88% { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+  90%, 100% { opacity: 0; transform: scale(0.9) translateY(-10px); pointer-events: none; }
+}
+
+/* Folder write animation keyboard mockup */
+.demo-keyboard-text::before {
+  content: "";
+  animation: demo-typing 6s infinite steps(20, end);
+}
+
+@keyframes demo-typing {
+  0%, 100% { content: ""; }
+  15% { content: "F"; }
+  25% { content: "Fa"; }
+  35% { content: "Fam"; }
+  45% { content: "Fam. "; }
+  55% { content: "Fam. B"; }
+  65% { content: "Fam. Be"; }
+  75% { content: "Fam. Bel"; }
+  85% { content: "Fam. Beltr"; }
+  95% { content: "Fam. Beltrán"; }
+}
+

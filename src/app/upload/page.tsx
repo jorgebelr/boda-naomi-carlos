@@ -10,7 +10,8 @@ import {
   AlertCircle, 
   CheckCircle2, 
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Eye
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -170,7 +171,7 @@ export default function UploadPage() {
     e.preventDefault();
     
     if (!albumName.trim()) {
-      setErrorMsg('Por favor ingresa un nombre para el álbum (ej: "Mesa 4").');
+      setErrorMsg('Por favor escribe tu nombre o familia para identificar tus fotos (Ej. Fam. Beltrán González).');
       return;
     }
 
@@ -428,28 +429,43 @@ export default function UploadPage() {
                 Tus fotos se han subido con éxito al álbum. ¡Muchas gracias por capturar y compartir estos momentos tan especiales!
               </p>
             </div>
-            <Button variant="primary" onClick={resetUpload} className="w-full mt-4">
-              Subir más fotos
-            </Button>
+            
+            <div className="w-full flex flex-col gap-3 mt-4">
+              <Button variant="primary" onClick={resetUpload} className="w-full py-4 text-sm font-semibold rounded-2xl">
+                Subir más fotos
+              </Button>
+              
+              <Link href="/gallery" className="w-full">
+                <Button variant="secondary" className="w-full py-4 text-sm font-semibold rounded-2xl flex items-center justify-center gap-2">
+                  <Eye className="w-4 h-4 text-stone-700" />
+                  Ver todas las fotos (Galería)
+                </Button>
+              </Link>
+
+              <Link href="/" className="w-full">
+                <Button variant="outline" className="w-full py-4 text-sm font-semibold rounded-2xl">
+                  Volver al Inicio
+                </Button>
+              </Link>
+            </div>
           </Card>
         ) : (
           /* Formulario Principal de Carga */
           <form onSubmit={handleUpload} className="flex flex-col gap-5">
             
-            {/* Campo de Nombre del Álbum */}
             <Card variant="default" className="flex flex-col gap-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center border border-stone-100">
                   <FolderHeart className="w-4 h-4 text-stone-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-stone-850">¿Dónde estás?</h3>
-                  <p className="text-[11px] text-stone-400">Agrupa tus fotos por mesa o grupo</p>
+                  <h3 className="text-sm font-semibold text-stone-850">Escribe tu Nombre o Familia</h3>
+                  <p className="text-[11px] text-stone-400">Es obligatorio escribir algo aquí para crear tu carpeta interactiva</p>
                 </div>
               </div>
               <Input
-                label="Identificador de Carpeta"
-                placeholder='Ej: "Mesa 4", "Primos", "Pista de baile"'
+                label="Escribe tu Nombre, Familia o Mesa aquí (Obligatorio)"
+                placeholder="Ej. Fam. Beltrán González"
                 value={albumName}
                 onChange={(e) => setAlbumName(e.target.value)}
                 disabled={isUploading}

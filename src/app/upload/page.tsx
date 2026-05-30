@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { extractPhotoMetadata, PhotoMetadata } from '@/lib/exif';
+import { getSharedFiles } from '@/lib/upload-store';
 
 // Estructura de archivo seleccionado
 interface SelectedFile {
@@ -89,6 +90,16 @@ export default function UploadPage() {
     };
 
     checkConnection();
+  }, []);
+
+  // Cargar archivos compartidos desde el inicio si existen
+  useEffect(() => {
+    const shared = getSharedFiles();
+    if (shared && shared.length > 0) {
+      const dt = new DataTransfer();
+      shared.forEach(file => dt.items.add(file));
+      processFiles(dt.files);
+    }
   }, []);
 
   // Manejar selección de archivos

@@ -1,16 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Camera, Heart, Sparkles, Lock, Eye, X, Image as ImageIcon, Check, FolderHeart, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { setSharedFiles } from '@/lib/upload-store';
 
 export default function Home() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   
   // Estado para controlar el tutorial interactivo
   const [activeTutorialStep, setActiveTutorialStep] = useState<number | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
+      setSharedFiles(selectedFiles);
+      router.push('/upload');
+    }
+  };
 
   return (
     <main className="min-h-screen py-10 px-4 flex flex-col items-center justify-center bg-[#fcfbfa]">
@@ -52,12 +64,23 @@ export default function Home() {
 
           {/* Botones principales */}
           <div className="w-full flex flex-col gap-3 mt-2">
-            <Link href="/upload" className="w-full">
-              <Button variant="primary" className="w-full py-4 text-sm font-semibold rounded-2xl flex items-center justify-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-300 fill-amber-350/20" />
-                Subir mis fotos
-              </Button>
-            </Link>
+            <input
+              type="file"
+              ref={fileInputRef}
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
+            <Button 
+              variant="primary" 
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-4 text-sm font-semibold rounded-2xl flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300 fill-amber-350/20" />
+              Subir mis fotos
+            </Button>
 
             <Button 
               variant="outline" 

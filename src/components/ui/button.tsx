@@ -14,11 +14,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     
     // Variantes de estilo (Estilo Apple, tonos neutros y cálidos)
     const variants = {
-      primary: 'bg-stone-900 text-stone-50 hover:bg-stone-850 shadow-sm active:bg-stone-950',
+      primary: 'bg-[var(--theme-primary,#1c1917)] text-stone-50 hover:bg-[var(--theme-primary-hover,#292524)] shadow-sm active:opacity-90',
       secondary: 'bg-stone-100 text-stone-900 hover:bg-stone-200 active:bg-stone-300',
       outline: 'bg-transparent text-stone-950 border border-stone-200 hover:bg-stone-50 active:bg-stone-100',
       ghost: 'bg-transparent text-stone-700 hover:bg-stone-100 hover:text-stone-900 active:bg-stone-200',
-      danger: 'bg-red-500 text-white hover:bg-red-600 active:bg-red-700',
+      danger: 'bg-red-500 text-white hover:bg-red-650 active:bg-red-750 focus:ring-red-400',
     };
 
     // Tamaños

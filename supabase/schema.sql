@@ -76,3 +76,34 @@ create policy "Allow admin full control on wedding-photos"
   to authenticated 
   using (bucket_id = 'wedding-photos')
   with check (bucket_id = 'wedding-photos');
+
+-- ==========================================
+-- 4. TABLA DE CONFIGURACIÓN DE LA BODA (AJUSTES)
+-- ==========================================
+create table if not exists public.wedding_settings (
+  id text primary key default 'main',
+  cover_photo_url text,
+  cover_photo_path text,
+  theme_color text default 'stone', -- 'stone', 'rose', 'emerald', 'amber'
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Registrar el registro por defecto
+insert into public.wedding_settings (id, cover_photo_url, theme_color)
+values ('main', null, 'stone')
+on conflict (id) do nothing;
+
+-- Habilitar Row Level Security (RLS)
+alter table public.wedding_settings enable row level security;
+
+-- Políticas de Seguridad para wedding_settings
+create policy "Allow public read to wedding_settings" 
+  on public.wedding_settings for select 
+  using (true);
+
+create policy "Allow admin full control on wedding_settings" 
+  on public.wedding_settings for all 
+  to authenticated 
+  using (true) 
+  with check (true);
+

@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Camera, Heart, Sparkles, Lock, Eye, X, Image as ImageIcon, Check, FolderHeart, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { setSharedFiles } from '@/lib/upload-store';
+import { getWeddingSettings, THEMES, WeddingTheme, WeddingSettings } from '@/lib/settings';
 
 export default function Home() {
   const router = useRouter();
@@ -15,6 +16,26 @@ export default function Home() {
   
   // Estado para controlar el tutorial interactivo
   const [activeTutorialStep, setActiveTutorialStep] = useState<number | null>(null);
+
+  // Estados de configuración de boda
+  const [settings, setSettings] = useState<WeddingSettings | null>(null);
+  const [activeTheme, setActiveTheme] = useState<WeddingTheme>('stone');
+
+  useEffect(() => {
+    getWeddingSettings().then(data => {
+      setSettings(data);
+      if (data && data.theme_color) {
+        setActiveTheme(data.theme_color);
+      }
+    });
+  }, []);
+
+  const theme = THEMES[activeTheme];
+
+  const themeVariables = {
+    '--theme-primary': activeTheme === 'rose' ? '#be123c' : activeTheme === 'emerald' ? '#065f46' : activeTheme === 'amber' ? '#d97706' : '#1c1917',
+    '--theme-primary-hover': activeTheme === 'rose' ? '#9f1239' : activeTheme === 'emerald' ? '#046a38' : activeTheme === 'amber' ? '#b45309' : '#292524',
+  } as React.CSSProperties;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -25,27 +46,45 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen py-10 px-4 flex flex-col items-center justify-center bg-[#fcfbfa]">
+    <main 
+      style={themeVariables}
+      className={`min-h-screen py-10 px-4 flex flex-col items-center justify-center transition-colors duration-500 ${theme.bgClass}`}
+    >
       <div className="w-full max-w-md flex flex-col gap-8 animate-fade-in">
         
         {/* Tarjeta de Bienvenida Principal */}
         <Card variant="glass" className="text-center py-12 px-6 flex flex-col items-center gap-6 relative overflow-hidden">
           
-          {/* Adorno de fondo estilo brillo */}
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-stone-100/50 rounded-full blur-3xl pointer-events-none" />
+          {/* Adorno de fondo estilo brillo (Ocultar si hay foto de portada para mejor visibilidad) */}
+          {!settings?.cover_photo_url && (
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-stone-100/50 rounded-full blur-3xl pointer-events-none" />
+          )}
+
+          {/* Foto de Portada de la Boda (Hero Banner inside Card) */}
+          {settings?.cover_photo_url && (
+            <div className="relative w-full h-44 -mt-12 -mx-6 mb-2 overflow-hidden bg-stone-150 shrink-0 border-b border-stone-200/50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={settings.cover_photo_url} 
+                alt="Naomi & Carlos" 
+                className="w-full h-full object-cover animate-fade-in"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#fcfbfa]/15 via-transparent to-black/10" />
+            </div>
+          )}
           
           {/* Iconos de Amor y Cámara */}
-          <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-stone-50 flex items-center justify-center border border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.01)]">
+          <div className={`relative ${settings?.cover_photo_url ? '-mt-16 z-10' : ''}`}>
+            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center border border-stone-150 shadow-[0_4px_20px_rgba(0,0,0,0.06)]">
               <Camera className="w-8 h-8 text-stone-700 stroke-[1.2]" />
             </div>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center shadow-sm">
-              <Heart className="w-3.5 h-3.5 text-amber-600 fill-amber-500/10" />
+            <div className={`absolute -bottom-1 -right-1 w-7 h-7 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center shadow-sm`}>
+              <Heart className={`w-3.5 h-3.5 ${theme.heartColor} ${theme.heartFill}`} />
             </div>
           </div>
 
           {/* Textos de Bienvenida */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2.5 w-full">
             <span className="text-[10px] font-sans font-bold tracking-widest text-stone-400 uppercase">
               Bienvenidos a Nuestra Boda
             </span>
@@ -76,9 +115,9 @@ export default function Home() {
             <Button 
               variant="primary" 
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-4 text-sm font-semibold rounded-2xl flex items-center justify-center gap-2"
+              className="w-full py-4 text-sm font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-sm"
             >
-              <Sparkles className="w-4 h-4 text-amber-300 fill-amber-350/20" />
+              <Sparkles className="w-4 h-4 text-white/95" />
               Subir mis fotos
             </Button>
 
@@ -90,6 +129,7 @@ export default function Home() {
               <Eye className="w-4 h-4 text-stone-600" />
               Ver fotos compartidas
             </Button>
+
           </div>
         </Card>
 
@@ -99,7 +139,7 @@ export default function Home() {
             <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest text-center">
               ¿Cómo funciona?
             </h3>
-            <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full font-semibold border border-amber-100 flex items-center gap-0.5">
+            <span className={`text-[10px] ${theme.accentBadge} px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-0.5`}>
               <Info className="w-2.5 h-2.5" />
               Toca un paso
             </span>

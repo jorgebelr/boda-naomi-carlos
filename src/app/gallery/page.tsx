@@ -16,6 +16,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { getWeddingSettings, THEMES, WeddingTheme } from '@/lib/settings';
 
 // Interface de Foto
 interface Photo {
@@ -46,6 +47,9 @@ export default function GalleryPage() {
   // Detección automática de sesión de administrador para mostrar botón de acceso
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
+  // Ajustes de Tema
+  const [activeTheme, setActiveTheme] = useState<WeddingTheme>('stone');
+
   useEffect(() => {
     // Comprobar si el administrador tiene una sesión activa
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -54,10 +58,16 @@ export default function GalleryPage() {
   }, []);
 
   useEffect(() => {
-    // Comprobar variables de conexión
+    // Comprobar variables de conexión y cargar tema
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
+    getWeddingSettings().then(data => {
+      if (data && data.theme_color) {
+        setActiveTheme(data.theme_color);
+      }
+    });
+
     if (url && key && !url.includes('your-project-id')) {
       setIsDemoMode(false);
       fetchGalleryPhotos();
@@ -67,6 +77,13 @@ export default function GalleryPage() {
       setIsLoading(false);
     }
   }, []);
+
+  const theme = THEMES[activeTheme];
+
+  const themeVariables = {
+    '--theme-primary': activeTheme === 'rose' ? '#be123c' : activeTheme === 'emerald' ? '#065f46' : activeTheme === 'amber' ? '#d97706' : '#1c1917',
+    '--theme-primary-hover': activeTheme === 'rose' ? '#9f1239' : activeTheme === 'emerald' ? '#046a38' : activeTheme === 'amber' ? '#b45309' : '#292524',
+  } as React.CSSProperties;
 
   const fetchGalleryPhotos = async () => {
     setIsLoading(true);
@@ -132,7 +149,10 @@ export default function GalleryPage() {
   };
 
   return (
-    <main className="min-h-screen py-8 px-4 flex flex-col items-center justify-start bg-[#fcfbfa]">
+    <main 
+      style={themeVariables}
+      className={`min-h-screen py-8 px-4 flex flex-col items-center justify-start transition-colors duration-500 ${theme.bgClass}`}
+    >
       <div className="w-full max-w-md flex flex-col gap-6">
         
         {/* Barra superior de Navegación */}
@@ -162,8 +182,8 @@ export default function GalleryPage() {
 
         {/* Encabezado Principal Premium */}
         <header className="text-center py-2 flex flex-col items-center gap-1">
-          <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-100 flex items-center justify-center mb-1">
-            <Heart className="w-5 h-5 text-stone-700 fill-stone-500/5 stroke-[1.2]" />
+          <div className={`w-10 h-10 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center mb-1`}>
+            <Heart className={`w-5 h-5 ${theme.heartColor} ${theme.heartFill} stroke-[1.2]`} />
           </div>
           <h1 className="font-serif text-3xl italic text-stone-900 tracking-tight leading-tight">
             Naomi &amp; Carlos

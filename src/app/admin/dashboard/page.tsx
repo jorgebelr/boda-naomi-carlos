@@ -24,6 +24,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
 import { useAdminAuth } from '@/lib/auth-hook';
+import { getWeddingSettings, updateWeddingSettings, THEMES, WeddingTheme, WeddingSettings } from '@/lib/settings';
+import { Sparkles, Upload } from 'lucide-react';
 
 // Interface de Foto
 interface Photo {
@@ -50,15 +52,123 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, loading, signOut } = useAdminAuth();
 
-  const [activeTab, setActiveTab] = useState<'summary' | 'timeline' | 'moderation'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'timeline' | 'moderation' | 'settings'>('summary');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Estados de control administrativo
+  // Estados de control administrativo y ajustes
   const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
   const [isActionPending, setIsActionPending] = useState<string | null>(null);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
+
+  // Ajustes de Tema y Portada
+  const [weddingSettings, setWeddingSettings] = useState<WeddingSettings | null>(null);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+
+  // Cargar ajustes al inicio
+  useEffect(() => {
+    if (user) {
+      getWeddingSettings().then(data => {
+        setWeddingSettings(data);
+      });
+    }
+  }, [user]);
+
+  // Cambiar tema
+  const handleThemeChange = async (themeName: WeddingTheme) => {
+    if (!weddingSettings) return;
+    setIsUpdatingSettings(true);
+    try {
+      const updated = await updateWeddingSettings({ theme_color: themeName });
+      setWeddingSettings(updated);
+    } catch (err) {
+      console.error('Error al actualizar el tema:', err);
+      alert('No se pudo guardar la selección de tema.');
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  // Subir foto de portada
+  const handleCoverPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !weddingSettings) return;
+    const file = e.target.files[0];
+    
+    setIsUploadingCover(true);
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const fileName = `settings/cover-photo-${Date.now()}.${extension}`;
+
+      // A. Eliminar foto anterior si existe
+      if (weddingSettings.cover_photo_path) {
+        await supabase.storage
+          .from('wedding-photos')
+          .remove([weddingSettings.cover_photo_path]);
+      }
+
+      // B. Subir nueva foto
+      const { error: uploadError } = await supabase.storage
+        .from('wedding-photos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // C. URL pública
+      const { data: urlData } = supabase.storage
+        .from('wedding-photos')
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl;
+
+      // D. Guardar en Base de Datos
+      const updated = await updateWeddingSettings({
+        cover_photo_url: publicUrl,
+        cover_photo_path: fileName,
+      });
+
+      setWeddingSettings(updated);
+      alert('Foto de portada actualizada con éxito.');
+    } catch (err) {
+      console.error('Error subiendo foto de portada:', err);
+      alert('Error al subir la foto de portada. Inténtalo de nuevo.');
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+
+  // Eliminar foto de portada
+  const handleCoverPhotoDelete = async () => {
+    if (!weddingSettings || !window.confirm('¿Seguro que deseas eliminar la foto de portada de tu boda?')) return;
+    
+    setIsUploadingCover(true);
+    try {
+      // A. Eliminar de Storage
+      if (weddingSettings.cover_photo_path) {
+        await supabase.storage
+          .from('wedding-photos')
+          .remove([weddingSettings.cover_photo_path]);
+      }
+
+      // B. Limpiar campos en DB
+      const updated = await updateWeddingSettings({
+        cover_photo_url: null,
+        cover_photo_path: null,
+      });
+
+      setWeddingSettings(updated);
+      alert('Foto de portada eliminada con éxito.');
+    } catch (err) {
+      console.error('Error al eliminar la foto de portada:', err);
+      alert('Error al eliminar la foto de portada.');
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
 
   // Redirección si no está autenticado
   useEffect(() => {
@@ -292,6 +402,19 @@ export default function AdminDashboardPage() {
               </span>
             )}
           </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`
+              flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all duration-200 whitespace-nowrap
+              ${activeTab === 'settings' 
+                ? 'bg-white text-stone-900 shadow-sm' 
+                : 'text-stone-500 hover:text-stone-900'}
+            `}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-550" />
+            Personalizar Boda
+          </button>
         </nav>
 
         {/* Notificaciones de Error del Servidor */}
@@ -476,6 +599,178 @@ export default function AdminDashboardPage() {
         )}
 
         {/* ======================================================== */}
+        {/* PESTAÑA: PERSONALIZAR BODA (SETTINGS) */}
+        {/* ======================================================== */}
+        {activeTab === 'settings' && weddingSettings && (
+          <div className="flex flex-col gap-6 animate-fade-in">
+            {/* Header del panel de personalización */}
+            <div className="flex justify-between items-center border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="font-serif text-lg italic text-stone-900">Personalizar la Boda</h3>
+                <p className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider font-mono mt-0.5">
+                  Gestiona la temática de colores y la foto de bienvenida principal
+                </p>
+              </div>
+            </div>
+
+            {/* Selector de Temas */}
+            <Card variant="default" className="p-6 rounded-3xl bg-white shadow-sm border border-stone-150/75 flex flex-col gap-4">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-amber-600 fill-amber-500/10" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-stone-900">Temática de Colores</h4>
+                  <p className="text-xs text-stone-400">Selecciona uno de los 4 temas más populares para ambientar la app de tu boda</p>
+                </div>
+              </div>
+
+              {/* Botones de Selección de Tema */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+                {(Object.keys(THEMES) as WeddingTheme[]).map((themeKey) => {
+                  const t = THEMES[themeKey];
+                  const isSelected = weddingSettings.theme_color === themeKey;
+                  
+                  // Color indicators for circles
+                  const circleBg = 
+                    themeKey === 'stone' ? 'bg-stone-900' :
+                    themeKey === 'rose' ? 'bg-rose-500' :
+                    themeKey === 'emerald' ? 'bg-emerald-700' : 'bg-amber-500';
+
+                  return (
+                    <button
+                      key={themeKey}
+                      onClick={() => handleThemeChange(themeKey)}
+                      disabled={isUpdatingSettings}
+                      className={`
+                        p-4 rounded-2xl border text-left flex flex-col gap-3 transition-all duration-200 active:scale-95 cursor-pointer
+                        ${isSelected 
+                          ? 'border-stone-900 bg-stone-50/50 shadow-sm ring-1 ring-stone-900' 
+                          : 'border-stone-150 bg-white hover:bg-stone-50/30'}
+                        ${isUpdatingSettings ? 'opacity-50 pointer-events-none' : ''}
+                      `}
+                    >
+                      {/* Círculo de Color con Check Indicator */}
+                      <div className="flex justify-between items-center w-full">
+                        <div className={`w-6 h-6 rounded-full ${circleBg} shadow-sm border border-black/5 shrink-0`} />
+                        {isSelected && (
+                          <span className="text-[10px] bg-stone-900 text-stone-50 w-4 h-4 rounded-full flex items-center justify-center font-bold">✓</span>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <div className="text-[11px] font-bold text-stone-900 leading-tight">{t.name}</div>
+                        <div className="text-[9px] text-stone-400 mt-0.5 capitalize">{themeKey}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Card>
+
+            {/* Foto de Portada */}
+            <Card variant="default" className="p-6 rounded-3xl bg-white shadow-sm border border-stone-150/75 flex flex-col gap-5">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-stone-50 border border-stone-150 flex items-center justify-center shrink-0">
+                  <Upload className="w-4 h-4 text-stone-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-stone-900">Foto de Bienvenida / Portada</h4>
+                  <p className="text-xs text-stone-400">Esta es la imagen de portada que verán tus invitados al abrir el link de la boda</p>
+                </div>
+              </div>
+
+              {/* Vista Previa / Estado actual de la foto de portada */}
+              {weddingSettings.cover_photo_url ? (
+                <div className="relative rounded-2xl overflow-hidden aspect-[16/9] max-w-md bg-stone-50 border border-stone-200 group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={weddingSettings.cover_photo_url} 
+                    alt="Foto de portada de bodas" 
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Loading spinner during upload */}
+                  {isUploadingCover && (
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex flex-col items-center justify-center text-white text-xs z-15">
+                      <svg className="animate-spin h-6 w-6 text-white mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Guardando imagen...</span>
+                    </div>
+                  )}
+
+                  {/* Acciones flotantes premium */}
+                  {!isUploadingCover && (
+                    <div className="absolute bottom-3 right-3 flex gap-2 z-10">
+                      <input 
+                        type="file" 
+                        id="cover-photo-change" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleCoverPhotoUpload} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('cover-photo-change')?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-white text-stone-900 text-[10px] font-bold shadow-md hover:bg-stone-50 transition-colors uppercase tracking-wider"
+                      >
+                        Cambiar Foto
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCoverPhotoDelete}
+                        className="px-3 py-1.5 rounded-xl bg-red-655 text-white text-[10px] font-bold shadow-md hover:bg-red-650 transition-colors uppercase tracking-wider bg-red-600 hover:bg-red-700"
+                      >
+                        Eliminar Foto
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Empty state / file upload box */
+                <div className="max-w-md">
+                  <input 
+                    type="file" 
+                    id="cover-photo-upload" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleCoverPhotoUpload} 
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => !isUploadingCover && document.getElementById('cover-photo-upload')?.click()}
+                    disabled={isUploadingCover}
+                    className="w-full rounded-2xl border-2 border-dashed border-stone-250 py-10 flex flex-col items-center justify-center text-center hover:bg-stone-50/50 active:scale-[0.99] transition-all duration-200 cursor-pointer"
+                  >
+                    {isUploadingCover ? (
+                      <div className="flex flex-col items-center text-stone-400 gap-2">
+                        <svg className="animate-spin h-6 w-6 text-stone-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-xs uppercase tracking-wider font-semibold">Guardando foto de portada...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-150 flex items-center justify-center mb-3">
+                          <ImageIcon className="w-5 h-5 text-stone-500" />
+                        </div>
+                        <span className="text-xs font-bold text-stone-900">Subir Foto de Portada</span>
+                        <span className="text-[10px] text-stone-400 mt-1 max-w-[220px]">Recomendado: Imagen horizontal de alta calidad en formato JPG o PNG</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* ======================================================== */}
         {/* ESTADOS DE CARGA */}
         {/* ======================================================== */}
         {isLoadingData && (
@@ -588,10 +883,10 @@ export default function AdminDashboardPage() {
 
               {/* Botón de Borrado Únicamente Integrado en Lightbox */}
               <Button
-                variant="outline"
+                variant="danger"
                 size="sm"
                 onClick={() => setPhotoToDelete(activeTimelinePhotos[activeLightboxIndex].id)}
-                className="w-full mt-1 py-2.5 rounded-xl border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 text-xs font-bold flex items-center justify-center gap-1.5"
+                className="w-full mt-1 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-md active:scale-95"
                 disabled={isActionPending !== null}
               >
                 <Trash2 className="w-3.5 h-3.5" />

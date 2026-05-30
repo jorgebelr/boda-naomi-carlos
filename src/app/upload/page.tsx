@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { extractPhotoMetadata, PhotoMetadata } from '@/lib/exif';
 import { getSharedFiles } from '@/lib/upload-store';
+import { getWeddingSettings, THEMES, WeddingTheme } from '@/lib/settings';
 
 // Estructura de archivo seleccionado
 interface SelectedFile {
@@ -40,6 +41,24 @@ export default function UploadPage() {
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
+  // Ajustes de Tema
+  const [activeTheme, setActiveTheme] = useState<WeddingTheme>('stone');
+
+  useEffect(() => {
+    getWeddingSettings().then(data => {
+      if (data && data.theme_color) {
+        setActiveTheme(data.theme_color);
+      }
+    });
+  }, []);
+
+  const theme = THEMES[activeTheme];
+
+  const themeVariables = {
+    '--theme-primary': activeTheme === 'rose' ? '#be123c' : activeTheme === 'emerald' ? '#065f46' : activeTheme === 'amber' ? '#d97706' : '#1c1917',
+    '--theme-primary-hover': activeTheme === 'rose' ? '#9f1239' : activeTheme === 'emerald' ? '#046a38' : activeTheme === 'amber' ? '#b45309' : '#292524',
+  } as React.CSSProperties;
   
   // Detectar si Supabase está configurado correctamente
   const [isDemoMode, setIsDemoMode] = useState(true);
@@ -297,7 +316,10 @@ export default function UploadPage() {
   };
 
   return (
-    <main className="min-h-screen py-8 px-4 flex flex-col items-center justify-start bg-[#fcfbfa]">
+    <main 
+      style={themeVariables}
+      className={`min-h-screen py-8 px-4 flex flex-col items-center justify-start transition-colors duration-500 ${theme.bgClass}`}
+    >
       {/* Contenedor central - Mobile first */}
       <div className="w-full max-w-md flex flex-col gap-6">
         
@@ -311,7 +333,7 @@ export default function UploadPage() {
         
         {/* Encabezado elegante de Bodas */}
         <header className="text-center py-4 flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-3">
+          <div className={`w-12 h-12 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center mb-3`}>
             <Camera className="w-6 h-6 text-stone-700 stroke-[1.5]" />
           </div>
           <h1 className="font-serif text-3xl italic text-stone-900 tracking-tight">
@@ -474,8 +496,8 @@ export default function UploadPage() {
             {/* Caja de Mensaje a los Novios */}
             <Card variant="default" className="flex flex-col gap-4 p-5 rounded-3xl">
               <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center border border-stone-100 shrink-0 mt-0.5">
-                  <MessageSquareHeart className="w-4 h-4 text-stone-600 fill-stone-500/5" />
+                <div className={`w-8 h-8 rounded-full ${theme.accentBg} flex items-center justify-center border ${theme.accentBorder} shrink-0 mt-0.5`}>
+                  <MessageSquareHeart className={`w-4 h-4 ${theme.heartColor} ${theme.heartFill}`} />
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <h3 className="text-sm font-semibold text-stone-850">Deja un lindo mensaje a los novios</h3>
@@ -568,7 +590,7 @@ export default function UploadPage() {
             {(message.trim() || guestName.trim()) && (
               <div className="w-full bg-[#fdfdfc] border border-stone-150 rounded-2xl p-4 text-left flex flex-col gap-1.5 shadow-sm max-w-[320px]">
                 <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider flex items-center gap-1">
-                  <MessageSquareHeart className="w-3 h-3 text-stone-450 fill-stone-500/5" />
+                  <MessageSquareHeart className={`w-3 h-3 ${theme.heartColor} ${theme.heartFill}`} />
                   Tu dedicatoria:
                 </span>
                 {message.trim() && (

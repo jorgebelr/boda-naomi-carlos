@@ -66,17 +66,26 @@ export default function Home() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={settings.cover_photo_url} 
-                alt="Naomi & Carlos" 
+                alt="Alicia y Fernando" 
                 className="w-full h-full object-cover animate-fade-in"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#fcfbfa]/15 via-transparent to-black/10" />
             </div>
           )}
           
-          {/* Iconos de Amor y Cámara */}
+          {/* Iconos de Amor y Cámara / Foto de Perfil */}
           <div className={`relative ${settings?.cover_photo_url ? '-mt-16 z-10' : ''}`}>
-            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center border border-stone-150 shadow-[0_4px_20px_rgba(0,0,0,0.06)]">
-              <Camera className="w-8 h-8 text-stone-700 stroke-[1.2]" />
+            <div className="w-20 h-20 rounded-full bg-white overflow-hidden border border-stone-150 shadow-[0_4px_20px_rgba(0,0,0,0.06)] shrink-0 flex items-center justify-center">
+              {settings?.profile_photo_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img 
+                  src={settings.profile_photo_url} 
+                  alt="Alicia y Fernando" 
+                  className="w-full h-full object-cover animate-fade-in"
+                />
+              ) : (
+                <Camera className="w-8 h-8 text-stone-700 stroke-[1.2]" />
+              )}
             </div>
             <div className={`absolute -bottom-1 -right-1 w-7 h-7 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center shadow-sm`}>
               <Heart className={`w-3.5 h-3.5 ${theme.heartColor} ${theme.heartFill}`} />
@@ -89,7 +98,7 @@ export default function Home() {
               Bienvenidos a Nuestra Boda
             </span>
             <h1 className="font-serif text-4xl text-stone-900 italic tracking-tight font-light leading-snug">
-              Naomi &amp; Carlos
+              Alicia y Fernando
             </h1>
             <div className="h-[1px] w-12 bg-stone-200 mx-auto my-1" />
             <p className="text-sm text-stone-500 font-serif italic">
@@ -373,15 +382,15 @@ export default function Home() {
               </div>
             )}
 
-            {/* Paso 2: Tutorial de Identificador de Carpeta */}
+            {/* Paso 2: Tutorial de Dedicatoria y Firma */}
             {activeTutorialStep === 2 && (
               <div className="flex flex-col gap-3 text-center items-center mt-2">
                 <div className="w-12 h-12 rounded-2xl bg-stone-50 border border-stone-150 flex items-center justify-center text-stone-700">
                   <FolderHeart className="w-6 h-6 stroke-[1.5]" />
                 </div>
                 <div>
-                  <h3 className="font-serif text-lg text-stone-950 italic">2. Escribe tu Nombre o Grupo</h3>
-                  <p className="text-[10px] text-stone-400 uppercase tracking-widest font-sans mt-0.5">Para organizar los recuerdos</p>
+                  <h3 className="font-serif text-lg text-stone-950 italic">2. Escribe tu Firma y Mensaje</h3>
+                  <p className="text-[10px] text-stone-400 uppercase tracking-widest font-sans mt-0.5">Acompaña tus fotos con cariño</p>
                 </div>
                 
                 <div className="bg-stone-50 border border-stone-100 rounded-2xl p-4 w-full text-left flex flex-col gap-3 mt-1">
@@ -389,16 +398,18 @@ export default function Home() {
                   
                   {/* Mini Input con escritura animada */}
                   <div className="bg-white border border-stone-200 rounded-xl p-3 flex flex-col gap-1.5 shadow-sm">
-                    <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider">Identificador de Carpeta:</span>
-                    <div className="w-full px-3 py-2 bg-stone-50 border border-stone-150 rounded-lg text-[11px] text-stone-850 font-medium flex items-center gap-1 min-h-[32px]">
-                      <span className="demo-keyboard-text inline-block" />
-                      <span className="w-[1.5px] h-3 bg-stone-700 animate-pulse" />
+                    <span className="text-[9px] font-semibold text-stone-500 uppercase tracking-wider">Tu dedicatoria y firma:</span>
+                    <div className="w-full px-3 py-2 bg-stone-50 border border-stone-150 rounded-lg text-[10px] text-stone-700 min-h-[48px] flex flex-col gap-1 italic">
+                      <div>&ldquo;¡Muchas felicidades Alicia y Fernando!&rdquo;</div>
+                      <div className="text-right text-[8.5px] font-bold font-mono text-stone-500">
+                        — <span className="demo-keyboard-text inline-block" />
+                        <span className="w-[1.5px] h-2.5 bg-stone-700 animate-pulse inline-block align-middle" />
+                      </div>
                     </div>
-                    <span className="text-[9px] text-stone-400">Ej. Fam. Beltrán González</span>
                   </div>
 
                   <p className="text-[11px] text-stone-550 leading-relaxed">
-                    Escribe tu nombre, tus apellidos o el número de mesa para que todas tus fotos se agrupen de forma interactiva en la galería.
+                    Escribe un hermoso mensaje de felicitación para **Alicia y Fernando** y firma con tu nombre o el de tu familia. ¡Aparecerá junto a tus fotos!
                   </p>
                 </div>
               </div>

@@ -16,7 +16,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-import { getWeddingSettings, THEMES, WeddingTheme } from '@/lib/settings';
+import { getWeddingSettings, THEMES, WeddingTheme, WeddingSettings } from '@/lib/settings';
 
 // Interface de Foto
 interface Photo {
@@ -49,6 +49,7 @@ export default function GalleryPage() {
 
   // Ajustes de Tema
   const [activeTheme, setActiveTheme] = useState<WeddingTheme>('stone');
+  const [settings, setSettings] = useState<WeddingSettings | null>(null);
 
   useEffect(() => {
     // Comprobar si el administrador tiene una sesión activa
@@ -63,6 +64,7 @@ export default function GalleryPage() {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     getWeddingSettings().then(data => {
+      setSettings(data);
       if (data && data.theme_color) {
         setActiveTheme(data.theme_color);
       }
@@ -182,11 +184,20 @@ export default function GalleryPage() {
 
         {/* Encabezado Principal Premium */}
         <header className="text-center py-2 flex flex-col items-center gap-1">
-          <div className={`w-10 h-10 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center mb-1`}>
-            <Heart className={`w-5 h-5 ${theme.heartColor} ${theme.heartFill} stroke-[1.2]`} />
+          <div className={`w-10 h-10 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center mb-1 overflow-hidden shrink-0`}>
+            {settings?.profile_photo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img 
+                src={settings.profile_photo_url} 
+                alt="Alicia y Fernando" 
+                className="w-full h-full object-cover animate-fade-in"
+              />
+            ) : (
+              <Heart className={`w-5 h-5 ${theme.heartColor} ${theme.heartFill} stroke-[1.2]`} />
+            )}
           </div>
           <h1 className="font-serif text-3xl italic text-stone-900 tracking-tight leading-tight">
-            Naomi &amp; Carlos
+            Alicia y Fernando
           </h1>
           <p className="text-[10px] font-sans text-stone-400 tracking-widest uppercase font-bold mt-1">
             Galería Cronológica de Momentos
@@ -394,7 +405,7 @@ const MOCK_PHOTOS: Photo[] = [
     taken_at: new Date(Date.now() - 7200000).toISOString(),
     approved: true,
     guest_name: 'Sofía & Alejandro',
-    message: 'Qué hermosa ceremonia. Verlos brillar juntos es una delicia. ¡Que viva el amor de Naomi y Carlos!',
+    message: 'Qué hermosa ceremonia. Verlos brillar juntos es una delicia. ¡Que viva el amor de Alicia y Fernando!',
     metadata: {},
     created_at: new Date().toISOString()
   },
@@ -404,7 +415,7 @@ const MOCK_PHOTOS: Photo[] = [
     url: 'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=1000&auto=format&fit=crop&q=80',
     taken_at: new Date(Date.now() - 10800000).toISOString(),
     approved: true,
-    guest_name: 'Mesa 4 - Primos de Carlos',
+    guest_name: 'Mesa 4 - Primos de Fernando',
     message: '¡Parranda total! Celebrando en grande por este matrimonio. Que no falte nunca el baile ni las risas.',
     metadata: {},
     created_at: new Date().toISOString()
@@ -415,8 +426,8 @@ const MOCK_PHOTOS: Photo[] = [
     url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1000&auto=format&fit=crop&q=80',
     taken_at: new Date(Date.now() - 14400000).toISOString(),
     approved: true,
-    guest_name: 'María Luisa (Tía de Naomi)',
-    message: 'Mi niña hermosa Naomi, te ves radiante. Carlos, tienes en tus manos una joya preciosa. ¡Que Dios bendiga su matrimonio por siempre!',
+    guest_name: 'María Luisa (Tía de Alicia)',
+    message: 'Mi niña hermosa Alicia, te ves radiante. Fernando, tienes en tus manos una joya preciosa. ¡Que Dios bendiga su matrimonio por siempre!',
     metadata: {},
     created_at: new Date().toISOString()
   }

@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase';
 import { extractPhotoMetadata, PhotoMetadata } from '@/lib/exif';
 import { getSharedFiles } from '@/lib/upload-store';
-import { getWeddingSettings, THEMES, WeddingTheme } from '@/lib/settings';
+import { getWeddingSettings, THEMES, WeddingTheme, WeddingSettings } from '@/lib/settings';
 
 // Estructura de archivo seleccionado
 interface SelectedFile {
@@ -44,9 +44,11 @@ export default function UploadPage() {
   
   // Ajustes de Tema
   const [activeTheme, setActiveTheme] = useState<WeddingTheme>('stone');
+  const [settings, setSettings] = useState<WeddingSettings | null>(null);
 
   useEffect(() => {
     getWeddingSettings().then(data => {
+      setSettings(data);
       if (data && data.theme_color) {
         setActiveTheme(data.theme_color);
       }
@@ -333,8 +335,17 @@ export default function UploadPage() {
         
         {/* Encabezado elegante de Bodas */}
         <header className="text-center py-4 flex flex-col items-center">
-          <div className={`w-12 h-12 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center mb-3`}>
-            <Camera className="w-6 h-6 text-stone-700 stroke-[1.5]" />
+          <div className={`w-12 h-12 rounded-full ${theme.accentBg} border ${theme.accentBorder} flex items-center justify-center mb-3 overflow-hidden shrink-0`}>
+            {settings?.profile_photo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img 
+                src={settings.profile_photo_url} 
+                alt="Alicia y Fernando" 
+                className="w-full h-full object-cover animate-fade-in"
+              />
+            ) : (
+              <Camera className="w-6 h-6 text-stone-700 stroke-[1.5]" />
+            )}
           </div>
           <h1 className="font-serif text-3xl italic text-stone-900 tracking-tight">
             Nuestra Boda
@@ -509,7 +520,7 @@ export default function UploadPage() {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 disabled={isUploading}
-                placeholder="¡Muchas felicidades Naomi & Carlos! Les deseamos un matrimonio hermoso lleno de amor y complicidad..."
+                placeholder="¡Muchas felicidades Alicia y Fernando! Les deseamos un matrimonio hermoso lleno de amor y complicidad..."
                 className="w-full min-h-[90px] p-3 text-sm bg-white border border-stone-200 rounded-2xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-450 focus:ring-2 focus:ring-stone-100 transition-all duration-200 resize-none disabled:bg-stone-50 disabled:text-stone-400"
                 maxLength={300}
               />

@@ -66,6 +66,7 @@ export default function AdminDashboardPage() {
   const [weddingSettings, setWeddingSettings] = useState<WeddingSettings | null>(null);
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
   // Cargar ajustes al inicio
   useEffect(() => {
@@ -161,12 +162,91 @@ export default function AdminDashboardPage() {
       });
 
       setWeddingSettings(updated);
-      alert('Foto de portada eliminada con éxito.');
+      alert('Foto de portada de la boda eliminada con éxito.');
     } catch (err) {
       console.error('Error al eliminar la foto de portada:', err);
       alert('Error al eliminar la foto de portada.');
     } finally {
       setIsUploadingCover(false);
+    }
+  };
+
+  // Subir foto de perfil
+  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !weddingSettings) return;
+    const file = e.target.files[0];
+    
+    setIsUploadingProfile(true);
+    try {
+      const extension = file.name.split('.').pop() || 'jpg';
+      const fileName = `settings/profile-photo-${Date.now()}.${extension}`;
+
+      // A. Eliminar foto anterior si existe
+      if (weddingSettings.profile_photo_path) {
+        await supabase.storage
+          .from('wedding-photos')
+          .remove([weddingSettings.profile_photo_path]);
+      }
+
+      // B. Subir nueva foto
+      const { error: uploadError } = await supabase.storage
+        .from('wedding-photos')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // C. URL pública
+      const { data: urlData } = supabase.storage
+        .from('wedding-photos')
+        .getPublicUrl(fileName);
+
+      const publicUrl = urlData.publicUrl;
+
+      // D. Guardar en Base de Datos
+      const updated = await updateWeddingSettings({
+        profile_photo_url: publicUrl,
+        profile_photo_path: fileName,
+      });
+
+      setWeddingSettings(updated);
+      alert('Foto de perfil de la boda actualizada con éxito.');
+    } catch (err) {
+      console.error('Error subiendo foto de perfil:', err);
+      alert('Error al subir la foto de perfil. Inténtalo de nuevo.');
+    } finally {
+      setIsUploadingProfile(false);
+    }
+  };
+
+  // Eliminar foto de perfil
+  const handleProfilePhotoDelete = async () => {
+    if (!weddingSettings || !window.confirm('¿Seguro que deseas eliminar la foto de perfil de tu boda?')) return;
+    
+    setIsUploadingProfile(true);
+    try {
+      // A. Eliminar de Storage
+      if (weddingSettings.profile_photo_path) {
+        await supabase.storage
+          .from('wedding-photos')
+          .remove([weddingSettings.profile_photo_path]);
+      }
+
+      // B. Limpiar campos en DB
+      const updated = await updateWeddingSettings({
+        profile_photo_url: null,
+        profile_photo_path: null,
+      });
+
+      setWeddingSettings(updated);
+      alert('Foto de perfil de la boda eliminada con éxito.');
+    } catch (err) {
+      console.error('Error al eliminar la foto de perfil:', err);
+      alert('Error al eliminar la foto de perfil.');
+    } finally {
+      setIsUploadingProfile(false);
     }
   };
 
@@ -332,13 +412,22 @@ export default function AdminDashboardPage() {
       {/* Encabezado Administrativo Premium */}
       <header className="sticky top-0 z-45 bg-white/80 backdrop-blur-md border-b border-stone-100 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-stone-900 flex items-center justify-center text-white">
-            <Heart className="w-4 h-4 text-amber-300 fill-amber-300/10" />
+          <div className="w-9 h-9 rounded-full bg-stone-900 flex items-center justify-center text-white overflow-hidden shrink-0 border border-stone-200/50">
+            {weddingSettings?.profile_photo_url ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img 
+                src={weddingSettings.profile_photo_url} 
+                alt="Alicia y Fernando" 
+                className="w-full h-full object-cover animate-fade-in"
+              />
+            ) : (
+              <Heart className="w-4 h-4 text-amber-300 fill-amber-300/10" />
+            )}
           </div>
           <div>
             <h1 className="font-serif text-lg italic text-stone-950">Panel de Bodas</h1>
-            <p className="text-[10px] text-stone-400 font-medium uppercase tracking-widest">
-              Naomi &amp; Carlos
+            <p className="text-[10px] text-stone-400 font-medium uppercase tracking-widest font-sans">
+              Alicia y Fernando
             </p>
           </div>
         </div>
@@ -483,7 +572,7 @@ export default function AdminDashboardPage() {
             <Card variant="glass" className="sm:col-span-3 p-8 flex flex-col gap-4 rounded-3xl">
               <h3 className="font-serif text-xl italic text-stone-900">Administración Colaborativa</h3>
               <p className="text-sm text-stone-500 leading-relaxed">
-                ¡Hola Naomi &amp; Carlos! Su timeline cronológico está en marcha. Todos los invitados pueden subir sus fotos e incluir opcionalmente un dulce mensaje de felicitación. 
+                ¡Hola Alicia y Fernando! Su timeline cronológico está en marcha. Todos los invitados pueden subir sus fotos e incluir opcionalmente un dulce mensaje de felicitación. 
               </p>
               <p className="text-xs text-stone-400 -mt-1 leading-relaxed">
                 * Pulsen sobre cualquier miniatura en el timeline para abrir el **Lightbox de Detalle**, visualizar los datos EXIF de captura, los mensajes completos del invitado, o eliminar fotos de forma permanente.
@@ -761,6 +850,106 @@ export default function AdminDashboardPage() {
                         </div>
                         <span className="text-xs font-bold text-stone-900">Subir Foto de Portada</span>
                         <span className="text-[10px] text-stone-400 mt-1 max-w-[220px]">Recomendado: Imagen horizontal de alta calidad en formato JPG o PNG</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </Card>
+
+            {/* Foto de Perfil */}
+            <Card variant="default" className="p-6 rounded-3xl bg-white shadow-sm border border-stone-150/75 flex flex-col gap-5">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-stone-50 border border-stone-150 flex items-center justify-center shrink-0">
+                  <Camera className="w-4 h-4 text-stone-600" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-stone-900">Foto de Perfil (Novios)</h4>
+                  <p className="text-xs text-stone-400">Esta es la foto de perfil circular que aparecerá en el Home y en las cabeceras de las páginas</p>
+                </div>
+              </div>
+
+              {/* Vista Previa / Estado actual de la foto de perfil */}
+              {weddingSettings.profile_photo_url ? (
+                <div className="flex items-center gap-4">
+                  <div className="relative rounded-full overflow-hidden w-20 h-20 bg-stone-50 border border-stone-200 shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img 
+                      src={weddingSettings.profile_photo_url} 
+                      alt="Foto de perfil de bodas" 
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Loading spinner during upload */}
+                    {isUploadingProfile && (
+                      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center text-white z-15">
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+
+                  {!isUploadingProfile && (
+                    <div className="flex flex-col gap-2">
+                      <input 
+                        type="file" 
+                        id="profile-photo-change" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={handleProfilePhotoUpload} 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('profile-photo-change')?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-white border border-stone-250 text-stone-900 text-[10px] font-bold shadow-sm hover:bg-stone-50 transition-colors uppercase tracking-wider self-start"
+                      >
+                        Cambiar Foto
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleProfilePhotoDelete}
+                        className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-[10px] font-bold shadow-md hover:bg-red-700 transition-colors uppercase tracking-wider self-start"
+                      >
+                        Eliminar Foto
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Empty state / file upload box */
+                <div className="max-w-md">
+                  <input 
+                    type="file" 
+                    id="profile-photo-upload" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleProfilePhotoUpload} 
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => !isUploadingProfile && document.getElementById('profile-photo-upload')?.click()}
+                    disabled={isUploadingProfile}
+                    className="w-full rounded-2xl border-2 border-dashed border-stone-250 py-8 flex flex-col items-center justify-center text-center hover:bg-stone-50/50 active:scale-[0.99] transition-all duration-200 cursor-pointer"
+                  >
+                    {isUploadingProfile ? (
+                      <div className="flex flex-col items-center text-stone-400 gap-2">
+                        <svg className="animate-spin h-6 w-6 text-stone-500 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-xs uppercase tracking-wider font-semibold">Guardando foto de perfil...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-150 flex items-center justify-center mb-2">
+                          <Camera className="w-5 h-5 text-stone-500" />
+                        </div>
+                        <span className="text-xs font-bold text-stone-900">Subir Foto de Perfil</span>
+                        <span className="text-[10px] text-stone-400 mt-1 max-w-[220px]">Recomendado: Imagen cuadrada de rostro en formato JPG o PNG</span>
                       </>
                     )}
                   </button>

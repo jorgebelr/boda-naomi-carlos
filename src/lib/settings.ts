@@ -6,6 +6,8 @@ export interface WeddingSettings {
   id: string;
   cover_photo_url: string | null;
   cover_photo_path: string | null;
+  profile_photo_url: string | null;
+  profile_photo_path: string | null;
   theme_color: WeddingTheme;
   updated_at: string;
 }
@@ -85,6 +87,8 @@ export async function getWeddingSettings(): Promise<WeddingSettings> {
     id: 'main',
     cover_photo_url: null,
     cover_photo_path: null,
+    profile_photo_url: null,
+    profile_photo_path: null,
     theme_color: 'stone',
     updated_at: new Date().toISOString(),
   };

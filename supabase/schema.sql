@@ -84,6 +84,8 @@ create table if not exists public.wedding_settings (
   id text primary key default 'main',
   cover_photo_url text,
   cover_photo_path text,
+  profile_photo_url text,
+  profile_photo_path text,
   theme_color text default 'stone', -- 'stone', 'rose', 'emerald', 'amber'
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

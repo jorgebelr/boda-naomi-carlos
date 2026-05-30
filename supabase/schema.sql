@@ -1,53 +1,27 @@
 -- ==========================================
--- ESQUEMA DE BASE DE DATOS - BODA COLLAB ALBUM
--- Ejecutar este script en la consola SQL de Supabase
+-- NUEVO ESQUEMA DE BASE DE DATOS - BODA COLLAB ALBUM (SIN CARPETAS)
+-- Ejecutar este script en la consola SQL de Supabase para reiniciar la base de datos
 -- ==========================================
 
 -- Habilitar extensión para generación de UUIDs
 create extension if not exists "uuid-ossp";
 
+-- Eliminar tablas anteriores si existen (limpieza en cascada)
+drop table if exists public.photos cascade;
+drop table if exists public.albums cascade;
+
 -- ==========================================
--- 1. TABLA DE ÁLBUMES (CARPETAS)
+-- TABLA DE FOTOS (TODAS EN UN ÚNICO TIMELINE CRONOLÓGICO)
 -- ==========================================
-create table if not exists public.albums (
+create table public.photos (
   id uuid default gen_random_uuid() primary key,
-  name text not null,
-  slug text not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  
-  -- Asegurar que no tengamos nombres de álbumes duplicados exactos
-  constraint unique_album_name unique (name)
-);
--- Habilitar Row Level Security (RLS)
-alter table public.albums enable row level security;
-
--- Políticas de Seguridad para albums
-create policy "Allow public read to albums" 
-  on public.albums for select 
-  using (true);
-
-create policy "Allow public insert to albums" 
-  on public.albums for insert 
-  with check (true);
-
-create policy "Allow admin full access to albums" 
-  on public.albums for all 
-  to authenticated 
-  using (true) 
-  with check (true);
-
-
--- ==========================================
--- 2. TABLA DE FOTOS
--- ==========================================
-create table if not exists public.photos (
-  id uuid default gen_random_uuid() primary key,
-  album_id uuid references public.albums(id) on delete cascade not null,
   storage_path text not null, -- Ruta dentro del bucket de Supabase Storage
   url text not null,          -- URL pública accesible desde la web
-  taken_at timestamp with time zone not null, -- Fecha original de captura (EXIF) o de subida
+  taken_at timestamp without time zone not null, -- Fecha original de captura (EXIF) en hora local de la boda
   approved boolean default true not null, -- Moderación: aprobada por defecto
-  metadata jsonb default '{}'::jsonb not null, -- Guardar datos de cámara, resolución, etc.
+  guest_name text,            -- Nombre del invitado/familia (opcional)
+  message text,               -- Mensaje de felicitación para los novios (opcional)
+  metadata jsonb default '{}'::jsonb not null, -- Datos EXIF de la cámara, dimensiones, etc.
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -70,18 +44,12 @@ create policy "Allow admin full access to photos"
   with check (true);
 
 -- Índices de rendimiento
-create index if not exists photos_album_id_idx on public.photos(album_id);
 create index if not exists photos_taken_at_idx on public.photos(taken_at desc);
 create index if not exists photos_approved_idx on public.photos(approved);
 
-
 -- ==========================================
--- 3. CONFIGURACIÓN DEL BUCKET DE STORAGE
+-- CONFIGURACIÓN DEL BUCKET DE STORAGE
 -- ==========================================
--- Nota: En algunas instancias autohospedadas o configuraciones estrictas, 
--- puede ser necesario crear el bucket desde el dashboard de Supabase.
--- Este script inserta la configuración si es posible.
-
 insert into storage.buckets (id, name, public) 
 values ('wedding-photos', 'wedding-photos', true)
 on conflict (id) do nothing;

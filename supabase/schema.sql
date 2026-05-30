@@ -54,6 +54,11 @@ insert into storage.buckets (id, name, public)
 values ('wedding-photos', 'wedding-photos', true)
 on conflict (id) do nothing;
 
+-- Eliminar políticas de Storage previas si existen para evitar errores de duplicidad
+drop policy if exists "Allow public upload to wedding-photos" on storage.objects;
+drop policy if exists "Allow public read from wedding-photos" on storage.objects;
+drop policy if exists "Allow admin full control on wedding-photos" on storage.objects;
+
 -- Políticas de Seguridad para Storage (wedding-photos)
 -- Permite que cualquiera pueda subir archivos al bucket
 create policy "Allow public upload to wedding-photos" 
